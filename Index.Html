@@ -1,0 +1,294 @@
+public <!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crea tu cuento</title>
+
+  <style>
+    /* ---------- Diseño general (CSS) ---------- */
+    :root{
+      --fondo: #f4fbff;        /* tono suave de fondo */
+      --card: #ffffff;         /* color de las tarjetas */
+      --accent: #3b82f6;       /* color principal (botón) */
+      --texto: #23303f;
+      --radio: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body{
+      margin: 0;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      background: var(--fondo);
+      color: var(--texto);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container{
+      width: 100%;
+      max-width: 920px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    h1{
+      margin: 0;
+      font-size: 2rem;
+      letter-spacing: -0.02em;
+    }
+
+    .card{
+      background: var(--card);
+      padding: 20px;
+      border-radius: var(--radio);
+      box-shadow: 0 8px 24px rgba(35,48,63,0.08);
+    }
+
+    form .field {
+      margin-bottom: 12px;
+    }
+
+    label{
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    input[type="text"],
+    input[type="number"]{
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #d7e6fb;
+      font-size: 0.95rem;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button { /* oculta flechas en some browsers */
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .actions{
+      margin-top: 8px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button.btn{
+      padding: 10px 14px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      background: var(--accent);
+      color: white;
+      flex: 1;
+    }
+
+    button.btn.sec{
+      background: transparent;
+      color: var(--accent);
+      border: 2px solid rgba(59,130,246,0.14);
+    }
+
+    /* Resultado / cuento */
+    .resultado {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #cuento{
+      white-space: pre-wrap;
+      line-height: 1.5;
+      text-align: justify;
+    }
+
+    /* Responsive: en pantallas pequeñas colocamos todo en una columna */
+    @media (max-width: 760px){
+      .container{
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>✨ Crea tu cuento ✨</h1>
+      <p>Escribe los datos, presiona <strong>Continuar</strong> y verás tu cuento personalizado.</p>
+    </header>
+
+    <!-- FORMULARIO -->
+    <section class="card">
+      <form id="formCuento" autocomplete="off">
+        <div class="field">
+          <label for="nombre">Nombres y Apellidos</label>
+          <input id="nombre" name="nombre" type="text" placeholder="Ej. Juan Pérez" required>
+        </div>
+
+        <div class="field">
+          <label for="apodo">Apodo</label>
+          <input id="apodo" name="apodo" type="text" placeholder="Ej. Juancito" required>
+        </div>
+
+        <div class="field">
+          <label for="cabello">Color de Cabello</label>
+          <input id="cabello" name="cabello" type="text" placeholder="Ej. castaño" required>
+        </div>
+
+        <div class="field">
+          <label for="ojos">Color de Ojos</label>
+          <input id="ojos" name="ojos" type="text" placeholder="Ej. verdes" required>
+        </div>
+
+        <div class="field">
+          <label for="edad">Edad</label>
+          <input id="edad" name="edad" type="number" min="1" placeholder="Ej. 12" required>
+        </div>
+
+        <div class="field">
+          <label for="hobby">Hobby (solo uno)</label>
+          <input id="hobby" name="hobby" type="text" placeholder="Ej. pintar" required>
+        </div>
+
+        <div class="actions">
+          <button class="btn" type="submit">Continuar</button>
+          <button class="btn sec" type="button" id="limpiar">Limpiar</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- RESULTADO / CUENTO -->
+    <aside class="card resultado" id="panelResultado" hidden aria-live="polite">
+      <h2>Tu cuento</h2>
+      <article id="cuento" tabindex="-1"></article>
+      <div style="display:flex; gap:8px;">
+        <button class="btn sec" id="volver">Volver</button>
+        <button class="btn" id="reiniciar">Crear otro</button>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    // ---------- Variables: referenciamos elementos del DOM ----------
+    const form = document.getElementById('formCuento');         // el formulario
+    const panelResultado = document.getElementById('panelResultado'); // contenedor del cuento
+    const cuentoEl = document.getElementById('cuento');         // donde pondremos el cuento
+    const volverBtn = document.getElementById('volver');        // botón para volver al formulario
+    const reiniciarBtn = document.getElementById('reiniciar');// botón para crear otro cuento
+    const limpiarBtn = document.getElementById('limpiar');     // botón para limpiar el formulario
+
+    // utilidad: crea un elemento <strong> con texto seguro (evita inyección)
+    function fuerte(text){
+      const el = document.createElement('strong');
+      el.textContent = text; // textContent es seguro (escapa HTML)
+      return el;
+    }
+
+    // función que construye el cuento como un DocumentFragment (seguro, sin innerHTML)
+    function construirCuento({nombre, apodo, cabello, ojos, edad, hobby}){
+      const frag = document.createDocumentFragment();
+
+      const p1 = document.createElement('p');
+      p1.appendChild(document.createTextNode('Había una vez una persona llamada '));
+      p1.appendChild(fuerte(nombre));
+      p1.appendChild(document.createTextNode(', aunque todos la conocían como '));
+      p1.appendChild(fuerte(apodo));
+      p1.appendChild(document.createTextNode('.'));
+
+      const p2 = document.createElement('p');
+      p2.appendChild(document.createTextNode('Tenía el cabello de color '));
+      p2.appendChild(fuerte(cabello));
+      p2.appendChild(document.createTextNode(' y unos ojos '));
+      p2.appendChild(fuerte(ojos));
+      p2.appendChild(document.createTextNode(' que brillaban cuando sonreía.'));
+
+      const p3 = document.createElement('p');
+      p3.appendChild(document.createTextNode('A sus '));
+      p3.appendChild(fuerte(edad));
+      p3.appendChild(document.createTextNode(' años, su hobby favorito era '));
+      p3.appendChild(fuerte(hobby));
+      p3.appendChild(document.createTextNode(', y gracias a eso vivió una pequeña gran aventura que cambió su día.'));
+
+      frag.appendChild(p1);
+      frag.appendChild(p2);
+      frag.appendChild(p3);
+
+      return frag;
+    }
+
+    // ---------- Evento al enviar el formulario ----------
+    form.addEventListener('submit', function(event){
+      event.preventDefault();               // evita que el formulario recargue la página
+
+      // Validación HTML5: si hay campos inválidos, mostramos el mensaje nativo
+      if (!form.checkValidity()){
+        form.reportValidity();
+        return;
+      }
+
+      // Tomamos los valores (trim para quitar espacios extra)
+      const datos = {
+        nombre: document.getElementById('nombre').value.trim(),
+        apodo: document.getElementById('apodo').value.trim(),
+        cabello: document.getElementById('cabello').value.trim(),
+        ojos: document.getElementById('ojos').value.trim(),
+        edad: document.getElementById('edad').value.trim(),
+        hobby: document.getElementById('hobby').value.trim()
+      };
+
+      // Construimos el cuento y lo mostramos
+      cuentoEl.innerHTML = '';                      // limpiamos contenido previo (si lo hubiera)
+      const fragmento = construirCuento(datos);     // fragmento con párrafos
+      cuentoEl.appendChild(fragmento);              // lo añadimos al DOM
+
+      // Ocultamos formulario y mostramos panel de resultado
+      form.closest('section').style.display = 'none';
+      panelResultado.hidden = false;
+
+      // ponemos el foco en el cuento para accesibilidad (lectura por pantalla o explicación)
+      cuentoEl.focus();
+    });
+
+    // Botón "Volver": vuelve a mostrar el formulario sin limpiar los datos
+    volverBtn.addEventListener('click', function(){
+      panelResultado.hidden = true;
+      form.closest('section').style.display = ''; // vuelve a mostrar la sección del formulario
+      // enfocamos el primer campo para que el presentador vuelva a explicar desde ahí
+      document.getElementById('nombre').focus();
+    });
+
+    // Botón "Crear otro": limpia y vuelve al formulario
+    reiniciarBtn.addEventListener('click', function(){
+      panelResultado.hidden = true;
+      form.closest('section').style.display = '';
+      form.reset();                    // limpia los campos
+      document.getElementById('nombre').focus();
+    });
+
+    // Botón "Limpiar" en el formulario: solo limpia los campos
+    limpiarBtn.addEventListener('click', function(){
+      form.reset();
+      document.getElementById('nombre').focus();
+    });
+  </script>
+</body>
+</html>
+ Main {
+    
+}
